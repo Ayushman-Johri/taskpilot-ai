@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskPilot AI · My Workspace</title>
+  <script src="js/theme.js"></script><link rel="stylesheet" href="css/style.css">
+</head>
+<body class="role-agent">
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-logo">TP</div><span>TaskPilot <b>AI</b></span></div>
+    <div class="role-pill">Agent Workspace</div>
+    <nav>
+      <a href="#dashboard" class="nav-link" data-view="dashboard" data-title="My Dashboard"><svg class="ico" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span>Dashboard</span></a>
+      <a href="#tasks" class="nav-link" data-view="tasks" data-title="My Tasks"><svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4l-1.4-1.4L12 11.2 10.4 9.6 9 11zM20 12v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1h9V2H5a3 3 0 00-3 3v14a3 3 0 003 3h14a3 3 0 003-3v-7h-2z"/></svg><span>My Tasks</span></a>
+      <a href="#assistant" class="nav-link" data-view="assistant" data-title="My AI Assistant"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg><span>AI Assistant</span><kbd class=nav-kbd>Ctrl K</kbd></a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="shortcuts"><b>Shortcuts</b><span><kbd>/</kbd> search</span><span><kbd>N</kbd> next task</span><span><kbd>T</kbd> theme</span></div>
+      <button class="nav-link" id="logout-btn"><svg class="ico" viewBox="0 0 24 24"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 00-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2z"/></svg><span>Logout</span></button>
+    </div>
+  </aside>
+  <div class="nav-overlay" onclick="document.body.classList.remove('nav-open')"></div>
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="icon-btn mobile-only" id="menu-btn" aria-label="Menu"><svg class="ico" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
+        <div><h1 id="page-title">Dashboard</h1><div class="today" id="today"></div></div>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode" title="Light / dark mode (T)"></button>
+        <div class="notif-wrap">
+          <button class="icon-btn" id="bell-btn" aria-label="Notifications"><svg class="ico" viewBox="0 0 24 24"><path d="M12 22a2 2 0 002-2h-4a2 2 0 002 2zm6-6V11c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 00-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg><span class="bell-count" id="bell-count" hidden>0</span></button>
+          <div class="notif-panel" id="notif-panel">
+            <div class="notif-head"><div><b>Notifications</b><small id="notif-sub"></small></div><button class="link-btn" id="mark-read">Mark all read</button></div>
+            <div id="notif-list"></div>
+          </div>
+        </div>
+        <div class="user-box"><div class="avatar" id="user-avatar">?</div><div class="user-meta"><b id="user-name"></b><small id="user-role"></small></div></div>
+      </div>
+    </header>
+    <div class="content">
+      <section class="view" id="view-dashboard">
+        <div class="hero">
+          <div class="hero-text"><h2 id="hello"></h2><p id="hello-sub"></p>
+            <div class="hero-pills" id="hero-pills"></div></div>
+          <form class="quick-ask" id="quick-ask" autocomplete="off">
+            <label>✨ Ask TaskPilot AI</label>
+            <div class="qa-row"><input name="q" placeholder="e.g. What should I do first today?"><button class="btn light" type="submit"><svg class="ico" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button></div>
+            <div class="qa-chips"><button type="button" class="chip" data-q="Analyze my pending tasks and arrange them in order of priority. Tell me which tasks I should complete first and why.">⚡ Plan my day</button><button type="button" class="chip" data-q="Summarize my tasks">⚡ Summary</button><button type="button" class="chip" data-q="Which of my tasks are overdue?">⚡ Overdue</button></div>
+          </form>
+        </div>
+        <div class="stats-grid" id="agent-stats"><div class="skeleton" style="height:96px"></div><div class="skeleton" style="height:96px"></div><div class="skeleton" style="height:96px"></div><div class="skeleton" style="height:96px"></div><div class="skeleton" style="height:96px"></div><div class="skeleton" style="height:96px"></div></div>
+        <div class="dash-grid">
+          <div class="card span-7"><div class="card-head"><h3>🎯 Focus next</h3><span class="muted small">Ranked by deadline, priority &amp; effort</span></div><div id="focus-list" class="focus-list"></div></div>
+          <div class="card span-5"><div class="card-head"><h3>My progress</h3></div><div class="team-progress compact" id="my-progress"></div>
+            <h4 class="section-title">Completed · last 7 days <span class="pill-num" id="week-done"></span></h4><div id="trend"></div></div>
+          <div class="card span-7"><div class="card-head"><h3>Next 7 days</h3><span class="muted small">Hover a day to see tasks</span></div><div id="calendar"></div></div>
+          <div class="card span-5"><div class="card-head"><h3>🚨 Needs attention</h3></div><div id="attention"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-tasks">
+        <div class="toolbar card">
+          <div class="tabs" id="task-tabs">
+            <button class="tab active" data-filter="pending">Pending</button><button class="tab" data-filter="overdue">Overdue</button>
+            <button class="tab" data-filter="completed">Completed</button><button class="tab" data-filter="all">All</button>
+          </div>
+          <div class="spacer"></div>
+          <input type="search" id="f-search" placeholder="Search my tasks...  ( / )">
+        </div>
+        <div class="task-grid" id="task-grid"></div>
+      </section>
+
+      <section class="view" id="view-assistant">
+        <div class="chat-card">
+          <div class="chat-head">
+            <div class="chat-title"><div class="bot-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg></div>
+              <div><b>My Assistant</b><small><span class="live-dot"></span>Private · only your own tasks</small></div></div>
+            <button class="btn ghost sm" id="chat-clear">Clear chat</button>
+          </div>
+          <div class="chat-log" id="chat-log"></div>
+          <div class="chat-suggestions" id="chat-suggestions"></div>
+          <div class="chat-input-row">
+            <textarea id="chat-input" rows="1" placeholder="Ask about your tasks, deadlines, priorities..."></textarea>
+            <button class="btn primary send-btn" id="chat-send" aria-label="Send"><svg class="ico" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+          </div>
+          <div class="chat-note">⚡ Common questions are answered instantly · data shown is limited to your own tasks.</div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="js/api.js"></script><script src="js/markdown.js"></script><script src="js/ui.js"></script><script src="js/agent.js"></script>
+</body>
+</html>

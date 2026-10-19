@@ -1,0 +1,33 @@
+﻿# Secrets (NEVER commit)
+.env
+*.env
+!.env.example
+backend/.jwt_secret
+*.pem
+*.key
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+venv/
+.venv/
+env/
+
+# Logs / editors / OS
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Zips
+*.zip

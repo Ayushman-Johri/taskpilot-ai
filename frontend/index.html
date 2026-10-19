@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskPilot AI · Login</title>
+  <script src="js/theme.js"></script><link rel="stylesheet" href="css/style.css">
+</head>
+<body class="login-page">
+  <button class="icon-btn theme-float" id="theme-btn" aria-label="Toggle dark mode"></button>
+  <div class="login-wrap">
+    <section class="login-hero">
+      <div class="brand big"><div class="brand-logo">TP</div><span>TaskPilot <b>AI</b></span></div>
+      <h1>Smart task management for your operations team</h1>
+      <p>Assign work, track deadlines and let AI tell you what to do next.</p>
+      <ul class="hero-points">
+        <li>✔ Live dashboards with trends, calendar &amp; alerts</li>
+        <li>✔ Role-based access for Admins &amp; Agents</li>
+        <li>✔ AI assistant with instant &amp; cached answers</li>
+        <li>✔ Light &amp; dark mode</li>
+      </ul>
+    </section>
+    <section class="login-card">
+      <h2>Welcome back 👋</h2><p class="muted">Sign in to continue</p>
+      <div id="login-alert" class="alert" hidden></div>
+      <form id="login-form" autocomplete="on">
+        <label for="username">Username</label>
+        <input id="username" name="username" placeholder="e.g. admin or agent_a" required autocomplete="username">
+        <label for="password">Password</label>
+        <div class="pw-wrap"><input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="pw-toggle" id="pw-toggle">Show</button></div>
+        <button class="btn primary block" type="submit" id="login-btn">Sign in</button>
+      </form>
+      <div class="demo"><p class="muted small">Demo accounts (click to fill)</p>
+        <div class="demo-chips">
+          <button class="chip" data-u="admin" data-p="admin123">Admin</button>
+          <button class="chip" data-u="agent_a" data-p="agent123">Agent A</button><button class="chip" data-u="agent_b" data-p="agent123">Agent B</button>
+          <button class="chip" data-u="agent_c" data-p="agent123">Agent C</button><button class="chip" data-u="agent_d" data-p="agent123">Agent D</button>
+          <button class="chip" data-u="agent_e" data-p="agent123">Agent E</button><button class="chip" data-u="agent_f" data-p="agent123">Agent F</button>
+        </div></div>
+    </section>
+  </div>
+  <script src="js/api.js"></script><script src="js/login.js"></script>
+</body>
+</html>
