@@ -3,19 +3,15 @@ import re
 from typing import List
 
 OFF_TOPIC_REPLY = ("I can only help with task management in TaskPilot - tasks, deadlines, priorities, "
-                   "progress, agents and team analytics. Please ask something related to your tasks.")
-GREETING_REPLY = {
-    "admin": "Hello! 👋 I can analyse team tasks or make changes for you - for example "
-             "*\"Which tasks are overdue?\"* or *\"Assign task XYZ to Agent A by Friday\"*.",
-    "agent": "Hello! 👋 Ask me about your own tasks - for example *\"Summarize my tasks\"* or "
-             "*\"Which task should I do first?\"*",
-}
+                   "progress, people, roles and team analytics. Please ask something related to your work.")
+GREETING_REPLY = ("Hello! 👋 Ask me about the tasks you can see - for example *\"Summarize my tasks\"*, "
+                  "*\"Which tasks are overdue?\"* or *\"Update task 12 to 70%\"*.")
 DOMAIN_RE = re.compile(
-    r"\b(tasks?|agents?|admins?|users?|roles?|promote|demote|deadlines?|overdue|due|priorit(y|ies|ize|ise)|"
-    r"assign(ed|ment)?|reassign|status|pending|progress|complet(e|ed|ion)|not\s+started|on\s+hold|"
+    r"\b(tasks?|agents?|admins?|users?|roles?|permissions?|access|audit|logs?|activity|promote|demote|deadlines?|overdue|due|"
+    r"priorit(y|ies|ize|ise)|assign(ed|ment)?|reassign|status|pending|progress|complet(e|ed|ion)|not\s+started|on\s+hold|"
     r"in\s+progress|partial(ly)?|workload|team|summar(y|ize|ise)|dashboard|analytics?|notifications?|"
     r"reminders?|password|username|rename|login|members?|kaam|kaamon|kitne|kitna|baaki|bacha|"
-    r"critical|urgent|estimate[sd]?|effort|hours?\s+left|time\s+left)\b|#\d+", re.I)
+    r"critical|urgent|estimate[sd]?|effort|hours?\s+left|time\s+left)\b|#\d+|\d+\s*%", re.I)
 OFF_TOPIC_RE = re.compile(
     r"\b(python|java(script)?|c\+\+|html|css|sql|programming|coding|code\s+(for|in|of)|algorithm|leetcode|debug|regex|"
     r"weather|temperature|news|headlines|stock\s+price|share\s+price|bitcoin|crypto|"

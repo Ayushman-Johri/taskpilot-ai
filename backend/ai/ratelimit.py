@@ -1,4 +1,4 @@
-"""Rate-limit protection for the Groq API: per-user limit, Groq budget tracking, 429 handling helpers."""
+"""Rate-limit protection for the Groq API: per-user limit, Groq budget tracking, 429 helpers."""
 import re
 import threading
 import time
@@ -13,7 +13,6 @@ _budget = {"tokens": None, "tokens_reset_at": 0.0, "requests": None, "requests_r
 
 
 def check_user_limit(user_id: int) -> None:
-    """Sliding 60-second window per user (only LLM calls count; instant/cached answers are free)."""
     now = time.monotonic()
     with _lock:
         q = _user_calls[user_id]
@@ -26,7 +25,6 @@ def check_user_limit(user_id: int) -> None:
 
 
 def parse_duration(value) -> float:
-    """Groq reset values look like '7.66s', '2m59.56s', '120ms' or plain seconds."""
     if value is None:
         return 0.0
     value = str(value).strip()
@@ -60,8 +58,7 @@ def wait_for_budget(estimated_tokens: int) -> None:
         return
     wait = max(waits)
     if wait > AI_MAX_RETRY_WAIT_SEC:
-        raise TooManyRequests(f"The AI is busy right now. Please try again in {int(wait) + 1} seconds.",
-                              retry_after=int(wait) + 1)
+        raise TooManyRequests(f"The AI is busy right now. Please try again in {int(wait) + 1} seconds.", retry_after=int(wait) + 1)
     time.sleep(wait + 0.2)
     with _lock:
         _budget["tokens"] = None

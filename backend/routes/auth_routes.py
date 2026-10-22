@@ -10,12 +10,11 @@ bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 def login():
     body = request.get_json(silent=True) or {}
     token, user, exp = auth.login(body.get("username"), body.get("password"))
-    return jsonify({"token": token, "token_type": "Bearer", "expires_at": exp, "user": user.to_dict(),
-                    "home": "/admin.html" if user.is_admin else "/agent.html"})
+    return jsonify({"token": token, "token_type": "Bearer", "expires_at": exp, "user": user.to_dict(), "home": "/app.html"})
 
 
 @bp.post("/logout")
-@auth.require_role()
+@auth.require()
 def logout():
     auth.logout(g.token)
     audit(g.user.id, "logout", "")
@@ -23,6 +22,6 @@ def logout():
 
 
 @bp.get("/me")
-@auth.require_role()
+@auth.require()
 def me():
     return jsonify(g.user.to_dict())

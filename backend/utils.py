@@ -18,7 +18,7 @@ def to_iso(dt: datetime) -> str:
 
 
 def parse_dt(value: str) -> datetime:
-    """Parse ISO datetime; naive values are treated as local time (APP_TZ). Date only -> 18:00."""
+    """Parse ISO datetime; naive values are local time (APP_TZ). Date only -> 18:00."""
     if not value or not isinstance(value, str):
         raise BadRequest("Deadline is required (format: YYYY-MM-DDTHH:MM).")
     v = value.strip().replace("Z", "+00:00")
@@ -34,22 +34,15 @@ def parse_dt(value: str) -> datetime:
 
 
 def fmt_local(iso: Optional[str]) -> Optional[str]:
-    if not iso:
-        return None
-    return parse_dt(iso).astimezone(LOCAL_TZ).strftime("%d %b %Y, %I:%M %p")
+    return parse_dt(iso).astimezone(LOCAL_TZ).strftime("%d %b %Y, %I:%M %p") if iso else None
 
 
 def fmt_short(iso: Optional[str]) -> Optional[str]:
-    """Compact local time for AI data rows, e.g. '18 Oct 18:00'."""
-    if not iso:
-        return None
-    return parse_dt(iso).astimezone(LOCAL_TZ).strftime("%d %b %H:%M")
+    return parse_dt(iso).astimezone(LOCAL_TZ).strftime("%d %b %H:%M") if iso else None
 
 
 def local_input_value(iso: Optional[str]) -> Optional[str]:
-    if not iso:
-        return None
-    return parse_dt(iso).astimezone(LOCAL_TZ).strftime("%Y-%m-%dT%H:%M")
+    return parse_dt(iso).astimezone(LOCAL_TZ).strftime("%Y-%m-%dT%H:%M") if iso else None
 
 
 def humanize_remaining(seconds: float) -> str:

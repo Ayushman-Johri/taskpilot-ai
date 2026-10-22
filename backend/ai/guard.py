@@ -1,4 +1,6 @@
-"""Deterministic pre-LLM guard for AGENT users (runs BEFORE any prompt reaches the model)."""
+"""Deterministic pre-LLM guard (runs BEFORE any prompt reaches the model).
+Users who can only see their OWN tasks cannot ask about other people or the team,
+and users with no write permission at all cannot ask for changes."""
 import re
 from typing import Optional
 
@@ -10,11 +12,9 @@ TEAM_SCOPE_RE = re.compile(
     r"\b(all agents|other agents?|every agent|each agent|any agent|team[\s\-]?wide|whole team|entire team|"
     r"my team|everyone'?s?|everybody'?s?|sab(hi|ke)?\s+agents?|baaki\s+agents?|dusre\s+agents?|"
     r"doosre\s+agents?|puri\s+team|poori\s+team|team\s+ka|team\s+ke|leaderboard)\b", re.I)
-WRITE_INTENT_RE = re.compile(
-    r"\b(create|add|assign|reassign|delete|remove|rename|promote|demote)\b.{0,40}\b(tasks?|agents?|users?|admins?)\b|"
-    r"\b(tasks?|agents?|users?|admins?)\b.{0,40}\b(create|add|assign|reassign|delete|remove|rename|promote|demote)\b|"
-    r"\bmake\s+(me|him|her)\s+(an?\s+)?admin\b|"
-    r"\b(task|agent|admin)\s+(banao|bana do|assign karo|add karo|delete karo|hatao|hata do)\b", re.I)
+CHANGE_RE = re.compile(
+    r"\b(create|add|assign|reassign|delete|remove|rename|promote|demote|update|change|set|mark|edit|reset)\b|"
+    r"\b(banao|bana do|karo|kar do|hatao|hata do|badlo|badal do)\b", re.I)
 DENY_OTHER = "You are not authorized to access {who} information. You can view and analyze your own assigned tasks."
 STOP_WORDS = {"agent", "admin", "team", "task", "tasks", "my", "me", "the"}
 
@@ -26,8 +26,12 @@ def _mentions(text: str, needle: str) -> bool:
     return re.search(r"(?<![\w])" + re.escape(needle) + r"(?![\w])", text) is not None
 
 
-def agent_guard(user: User, message: str) -> Optional[str]:
-    if not user.is_agent:
+def guard(user: User, message: str) -> Optional[str]:
+    if not user.can_write and CHANGE_RE.search(message):
+        return "Your role is read-only, so I can't make changes. You can still ask questions about the data you can see."
+    if user.sees_all_tasks or user.has("users.view"):
+        return None
+    if not user.has("tasks.view_own"):
         return None
     text = message.lower()
     with get_conn() as conn:
@@ -46,7 +50,4 @@ def agent_guard(user: User, message: str) -> Optional[str]:
             return DENY_OTHER.format(who=f"Agent {(a or b or num).upper()}'s task")
     if TEAM_SCOPE_RE.search(message):
         return DENY_OTHER.format(who="other agents' or team-wide task")
-    if WRITE_INTENT_RE.search(message):
-        return ("Agents cannot create, assign or delete tasks or manage users - only an Admin can do that. "
-                "You can update the status, progress and notes of your own tasks from **My Tasks**.")
     return None

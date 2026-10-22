@@ -1,11 +1,11 @@
 (function () {
   const form = document.getElementById("login-form"), alertBox = document.getElementById("login-alert");
   const btn = document.getElementById("login-btn"), themeBtn = document.getElementById("theme-btn");
-  const paintTheme = () => (themeBtn.textContent = document.documentElement.dataset.theme === "dark" ? "☀️" : "🌙");
-  paintTheme(); themeBtn.addEventListener("click", () => { toggleTheme(); paintTheme(); });
+  const paint = () => (themeBtn.textContent = document.documentElement.dataset.theme === "dark" ? "☀️" : "🌙");
+  paint(); themeBtn.addEventListener("click", () => { toggleTheme(); paint(); });
   const showAlert = (msg) => { alertBox.textContent = msg; alertBox.hidden = false; form.classList.remove("shake"); void form.offsetWidth; form.classList.add("shake"); };
   if (new URLSearchParams(location.search).get("expired")) showAlert("Your session expired. Please sign in again.");
-  if (Session.token && Session.user) { window.location.replace(Session.user.role === "admin" ? "/admin.html" : "/agent.html"); return; }
+  if (Session.token && Session.user) { window.location.replace("/app.html"); return; }
   document.getElementById("pw-toggle").addEventListener("click", (e) => {
     const p = form.password; p.type = p.type === "password" ? "text" : "password"; e.target.textContent = p.type === "password" ? "Show" : "Hide";
   });

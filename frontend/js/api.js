@@ -1,4 +1,4 @@
-/* API client + JWT session (sessionStorage = one login per browser tab, so Admin and Agent tabs never mix). */
+/* API client + JWT session (sessionStorage = one login per browser tab, so two users in two tabs never mix). */
 const API_BASE = "";
 const Session = {
   get token() { return sessionStorage.getItem("tp_token"); },
@@ -27,14 +27,13 @@ async function api(path, { method = "GET", body } = {}) {
   if (res.status === 401 && !path.startsWith("/api/auth/login")) {
     Session.clear(); window.location.replace("/index.html?expired=1"); throw new ApiError(data.error || "Session expired", 401);
   }
-  if (!res.ok) throw new ApiError(data.error || `Request failed (${res.status})`, res.status,
-    data.retry_after || Number(res.headers.get("Retry-After") || 0));
+  if (!res.ok) throw new ApiError(data.error || `Request failed (${res.status})`, res.status, data.retry_after || Number(res.headers.get("Retry-After") || 0));
   return data;
 }
-async function guardPage(requiredRole) {
+/* Loads the current user (with permissions fresh from the database). */
+async function requireLogin() {
   if (!Session.token) { window.location.replace("/index.html"); return null; }
   const me = await api("/api/auth/me");
-  if (me.role !== requiredRole) { window.location.replace(me.role === "admin" ? "/admin.html" : "/agent.html"); return null; }
   Session.save(null, me);
   return me;
 }

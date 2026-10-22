@@ -1,6 +1,5 @@
-"""Minimal JWT (HS256) implementation using only the Python standard library.
-Token = base64url(header) . base64url(payload) . base64url(HMAC-SHA256 signature)
-Claims: sub (user id), role, name, tv (token version), jti (token id), iat, exp, iss."""
+"""Minimal JWT (HS256) using only the standard library.
+Claims: sub (user id), rid (role id), tv (token version), jti, iat, exp, iss."""
 import base64
 import hashlib
 import hmac
@@ -36,11 +35,9 @@ def encode(claims: dict) -> tuple:
 
 
 def decode(token: str) -> dict:
-    """Verify signature, algorithm, issuer and expiry. Raises Unauthorized on any problem."""
     try:
         h64, p64, s64 = token.split(".")
-        header = json.loads(_b64d(h64))
-        payload = json.loads(_b64d(p64))
+        header, payload = json.loads(_b64d(h64)), json.loads(_b64d(p64))
     except (ValueError, json.JSONDecodeError):
         raise Unauthorized("Invalid token. Please log in again.")
     if header.get("alg") != JWT_ALGORITHM or not hmac.compare_digest(_sign(f"{h64}.{p64}"), s64) \

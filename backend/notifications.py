@@ -1,11 +1,12 @@
-"""In-app notifications, optional Microsoft Teams webhook and the deadline watcher thread."""
+"""In-app notifications, optional Microsoft Teams webhook and the deadline watcher thread.
+"Managers" = active users whose role has tasks.view_all."""
 import json
 import threading
 import urllib.request
-from typing import List, Optional
+from typing import Optional
 
 from config import TEAMS_WEBHOOK_URL, DEADLINE_WARNING_HOURS, WATCHER_INTERVAL_SEC, STATUS_COMPLETED
-from database import get_conn
+from database import get_conn, users_with_permission
 from utils import now_utc, to_iso, parse_dt, fmt_local, humanize_remaining
 
 
@@ -20,8 +21,7 @@ def _push_teams(message: str) -> None:
         print(f"[teams-webhook] failed: {exc}")
 
 
-def notify(user_id: int, task_id: Optional[int], ntype: str, message: str,
-           ref: Optional[str] = None, dedupe: bool = False) -> None:
+def notify(user_id: int, task_id: Optional[int], ntype: str, message: str, ref=None, dedupe=False) -> None:
     with get_conn() as conn:
         if dedupe and conn.execute(
                 "SELECT 1 FROM notifications WHERE user_id=? AND task_id IS ? AND type=? AND IFNULL(ref,'')=IFNULL(?,'')",
@@ -32,14 +32,12 @@ def notify(user_id: int, task_id: Optional[int], ntype: str, message: str,
     _push_teams(message)
 
 
-def admin_ids() -> List[int]:
+def notify_managers(task_id, ntype: str, message: str, ref=None, dedupe=False, exclude=None) -> None:
     with get_conn() as conn:
-        return [r[0] for r in conn.execute("SELECT id FROM users WHERE role='admin' AND is_active=1")]
-
-
-def notify_admins(task_id, ntype: str, message: str, ref=None, dedupe: bool = False) -> None:
-    for aid in admin_ids():
-        notify(aid, task_id, ntype, message, ref=ref, dedupe=dedupe)
+        ids = users_with_permission(conn, "tasks.view_all")
+    for uid in ids:
+        if uid != exclude:
+            notify(uid, task_id, ntype, message, ref=ref, dedupe=dedupe)
 
 
 def list_for_user(user_id: int, limit: int = 50) -> dict:
@@ -65,18 +63,17 @@ def mark_all_read(user_id: int) -> None:
 def check_deadlines() -> None:
     with get_conn() as conn:
         rows = conn.execute("""SELECT t.id, t.title, t.deadline, t.assigned_to, u.display_name FROM tasks t
-                               JOIN users u ON u.id = t.assigned_to
-                               WHERE t.status != ? AND u.is_active = 1 AND u.role='agent'""", (STATUS_COMPLETED,)).fetchall()
+                               JOIN users u ON u.id = t.assigned_to WHERE t.status != ? AND u.is_active = 1""",
+                            (STATUS_COMPLETED,)).fetchall()
     n = now_utc()
     for r in rows:
         remaining = (parse_dt(r["deadline"]) - n).total_seconds()
         if remaining < 0:
             msg = f"Task #{r['id']} '{r['title']}' is overdue (deadline {fmt_local(r['deadline'])})."
             notify(r["assigned_to"], r["id"], "overdue", msg, ref=r["deadline"], dedupe=True)
-            notify_admins(r["id"], "overdue", f"{msg} Assigned to {r['display_name']}.", ref=r["deadline"], dedupe=True)
+            notify_managers(r["id"], "overdue", f"{msg} Assigned to {r['display_name']}.", ref=r["deadline"], dedupe=True)
         elif remaining <= DEADLINE_WARNING_HOURS * 3600:
-            msg = (f"Task #{r['id']} '{r['title']}' is due soon - {humanize_remaining(remaining)} "
-                   f"(deadline {fmt_local(r['deadline'])}).")
+            msg = f"Task #{r['id']} '{r['title']}' is due soon - {humanize_remaining(remaining)} (deadline {fmt_local(r['deadline'])})."
             notify(r["assigned_to"], r["id"], "deadline_approaching", msg, ref=r["deadline"], dedupe=True)
 
 

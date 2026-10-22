@@ -25,7 +25,6 @@ _load_dotenv(BASE_DIR / ".env")
 
 
 def _jwt_secret() -> str:
-    """JWT signing key: from .env, otherwise generated once and kept in backend/.jwt_secret."""
     if os.getenv("JWT_SECRET"):
         return os.environ["JWT_SECRET"]
     f = BASE_DIR / ".jwt_secret"
@@ -44,23 +43,21 @@ MIN_PASSWORD_LEN = 6
 # --- AI (Groq) -----------------------------------------------------------------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
-GROQ_FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "")   # used only on 429, e.g. openai/gpt-oss-20b
+GROQ_FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_TIMEOUT_SEC = 60
 AI_REASONING_EFFORT = os.getenv("AI_REASONING_EFFORT", "low")
 AI_MAX_OUTPUT_TOKENS = int(os.getenv("AI_MAX_OUTPUT_TOKENS", "900"))
 MAX_TOOL_ROUNDS = 5
-CHAT_CONTEXT_MESSAGES = 4           # previous messages sent to the model
-HISTORY_MSG_MAX_CHARS = 300         # older messages are trimmed to this length
+CHAT_CONTEXT_MESSAGES = 4
+HISTORY_MSG_MAX_CHARS = 300
 TOOL_RESULT_MAX_CHARS = 4000
-SNAPSHOT_MAX_ROWS = int(os.getenv("SNAPSHOT_MAX_ROWS", "60"))   # task rows sent with a read question
+SNAPSHOT_MAX_ROWS = int(os.getenv("SNAPSHOT_MAX_ROWS", "60"))
 AI_ACTION_EXPIRY_MIN = 15
 AI_USER_MSGS_PER_MIN = int(os.getenv("AI_USER_MSGS_PER_MIN", "8"))
 AI_MAX_RETRY_WAIT_SEC = 20
-
-# --- Token saving: instant answers + answer cache ----------------------------------------
-AI_INSTANT_ANSWERS = os.getenv("AI_INSTANT_ANSWERS", "1") == "1"   # common questions answered without the LLM
-AI_CACHE_TTL_MIN = int(os.getenv("AI_CACHE_TTL_MIN", "30"))       # cached AI answers live this long (if data unchanged)
+AI_INSTANT_ANSWERS = os.getenv("AI_INSTANT_ANSWERS", "1") == "1"
+AI_CACHE_TTL_MIN = int(os.getenv("AI_CACHE_TTL_MIN", "30"))
 
 # --- App -------------------------------------------------------------------------
 DB_PATH = os.getenv("TASK_DB", str(BASE_DIR / "taskpilot.db"))
@@ -81,5 +78,4 @@ STATUS_ON_HOLD = "On Hold"
 STATUS_COMPLETED = "Completed"
 STATUSES = [STATUS_NOT_STARTED, STATUS_IN_PROGRESS, STATUS_PARTIAL, STATUS_ON_HOLD, STATUS_COMPLETED]
 PRIORITIES = {"Low": 1, "Medium": 2, "High": 3, "Critical": 4}
-ROLES = ("admin", "agent")
 DEMO_AGENT_LETTERS = ["A", "B", "C", "D", "E", "F"]

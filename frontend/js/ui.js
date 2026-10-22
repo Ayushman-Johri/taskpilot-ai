@@ -1,10 +1,9 @@
-/* Shared UI helpers + dashboard widgets used by admin.js and agent.js */
+/* Shared UI helpers and widgets */
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-/* ---------- Icons ---------- */
 const ICONS = {
   check: '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>',
   alert: '<path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>',
@@ -20,8 +19,8 @@ const ICONS = {
   copy: '<path d="M16 1H4a2 2 0 00-2 2v14h2V3h12V1zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11v14z"/>',
   users: '<path d="M16 11a3 3 0 100-6 3 3 0 000 6zm-8 0a3 3 0 100-6 3 3 0 000 6zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>',
   shield: '<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>',
+  lock: '<path d="M18 8h-1V6a5 5 0 00-10 0v2H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V10a2 2 0 00-2-2zm-6 9a2 2 0 110-4 2 2 0 010 4zm3.1-9H8.9V6a3.1 3.1 0 016.2 0v2z"/>',
   up: '<path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/>',
-  down: '<path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/>',
   close: '<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>',
   sparkle: '<path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>',
   bolt: '<path d="M7 2v11h3v9l7-12h-4l4-8z"/>',
@@ -32,18 +31,24 @@ const ICONS = {
   sun: '<path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-9.95h-2V3.5h2V.55zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41 1.79-1.79zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM20 10.5v2h3v-2h-3zm-8-5a6 6 0 100 12 6 6 0 000-12zm-1 16.95h2V19.5h-2v2.95zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41-1.79 1.8z"/>',
   moon: '<path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 01-4.4 2.26 5.4 5.4 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>',
   refresh: '<path d="M17.65 6.35A7.96 7.96 0 0012 4a8 8 0 108 8h-2a6 6 0 11-1.76-4.24L13 11h7V4l-2.35 2.35z"/>',
-  send: '<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>',
-  calendar: '<path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v11z"/>',
   chart: '<path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/>',
 };
 const icon = (name, cls = "") => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ""}</svg>`;
+
+/* ---------- Permissions ---------- */
+let ME = null;
+const can = (...p) => !!ME && p.every((x) => ME.permissions.includes(x));
+const canAny = (...p) => !!ME && p.some((x) => ME.permissions.includes(x));
 
 /* ---------- Badges & small components ---------- */
 const STATUS_CLASS = { "Not Started": "st-notstarted", "In Progress": "st-progress", "Partially Completed": "st-partial", "On Hold": "st-hold", "Completed": "st-done" };
 const statusBadge = (s) => `<span class="badge ${STATUS_CLASS[s] || ""}">${esc(s)}</span>`;
 const priorityBadge = (p) => `<span class="badge pr-${esc(String(p).toLowerCase())}">${esc(p)}</span>`;
-const roleBadge = (r) => `<span class="badge rb-${esc(r)}">${r === "admin" ? icon("shield") : ""}${r === "admin" ? "Admin" : "Agent"}</span>`;
-
+function roleBadge(name) {
+  const palette = ["rb-a", "rb-b", "rb-c", "rb-d", "rb-e", "rb-f"];
+  const cls = name === "Admin" ? "rb-admin" : name === "Agent" ? "rb-agent" : palette[[...String(name)].reduce((a, c) => a + c.charCodeAt(0), 0) % palette.length];
+  return `<span class="badge ${cls}">${name === "Admin" ? icon("shield") : ""}${esc(name)}</span>`;
+}
 function progressBar(pct, status) {
   const p = Math.max(0, Math.min(100, Number(pct) || 0));
   const cls = status === "Completed" ? "done" : status === "On Hold" ? "hold" : "";
@@ -63,8 +68,8 @@ function statCard(label, value, iconName, tone, sub = "", go = "") {
 }
 function countUp(root = document) {
   $$("[data-count]", root).forEach((el) => {
-    const target = Number(el.dataset.count), start = performance.now(), dur = 650;
-    const step = (now) => { const k = Math.min(1, (now - start) / dur); el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3))).toLocaleString(); if (k < 1) requestAnimationFrame(step); };
+    const target = Number(el.dataset.count), start = performance.now();
+    const step = (now) => { const k = Math.min(1, (now - start) / 650); el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3))).toLocaleString(); if (k < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step);
   });
 }
@@ -79,47 +84,35 @@ const greeting = () => { const h = new Date().getHours(); return h < 12 ? "Good 
 /* ---------- Dashboard widgets ---------- */
 function trendChart(trend) {
   const max = Math.max(1, ...trend.map((d) => d.count));
-  return `<div class="bar-chart">${trend.map((d, i) => `
-    <div class="bc-col" title="${esc(d.date)}: ${d.count} completed">
-      <span class="bc-val">${d.count || ""}</span>
+  return `<div class="bar-chart">${trend.map((d, i) => `<div class="bc-col" title="${esc(d.date)}: ${d.count} completed"><span class="bc-val">${d.count || ""}</span>
       <div class="bc-bar ${i === trend.length - 1 ? "today" : ""}" style="--h:${Math.max(4, (d.count / max) * 100)}%; --i:${i}"></div>
       <span class="bc-lbl">${esc(i === trend.length - 1 ? "Today" : d.day)}</span></div>`).join("")}</div>`;
 }
 function calendarStrip(cal) {
-  return `<div class="cal-strip">${cal.map((d, i) => `
-    <div class="cal-day ${i === 0 ? "today" : ""} ${d.count ? "has" : ""} ${d.critical ? "hot" : ""}" title="${esc(d.titles.join("\n") || "Nothing due")}">
+  return `<div class="cal-strip">${cal.map((d, i) => `<div class="cal-day ${i === 0 ? "today" : ""} ${d.count ? "has" : ""} ${d.critical ? "hot" : ""}" title="${esc(d.titles.join("\n") || "Nothing due")}">
       <span class="cal-dow">${esc(i === 0 ? "Today" : d.day)}</span><b>${esc(d.date)}</b><span class="cal-mon">${esc(d.month)}</span>
       <span class="cal-count">${d.count ? `${d.count} due` : "—"}</span></div>`).join("")}</div>`;
 }
 function priorityMix(mix) {
   const total = Object.values(mix).reduce((a, b) => a + b, 0) || 1;
-  return `<div class="mix">${Object.entries(mix).reverse().map(([p, n]) => `
-    <div class="mix-row"><span class="mix-lbl">${priorityBadge(p)}</span>
+  return `<div class="mix">${Object.entries(mix).reverse().map(([p, n]) => `<div class="mix-row"><span class="mix-lbl">${priorityBadge(p)}</span>
       <div class="mix-track"><span class="mix-fill pf-${p.toLowerCase()}" style="--w:${(n / total) * 100}%"></span></div><b>${n}</b></div>`).join("")}</div>`;
 }
 function attentionList(items, showAgent) {
   if (!items.length) return emptyState("Nothing needs attention right now 🎉", "check");
   const cls = { overdue: "bad", "due in 24h": "warn", "on hold": "hold" };
-  return `<div class="attn">${items.map((t) => `
-    <div class="attn-item" data-task="${t.id}">
-      <span class="attn-tag ${cls[t.reason] || ""}">${esc(t.reason)}</span>
-      <div class="attn-body"><b>${esc(t.title)}</b><small>${showAgent ? esc(t.agent) + " · " : ""}${esc(t.time_left)}</small></div>
-      ${priorityBadge(t.priority)}</div>`).join("")}</div>`;
+  return `<div class="attn">${items.map((t) => `<div class="attn-item" data-task="${t.id}"><span class="attn-tag ${cls[t.reason] || ""}">${esc(t.reason)}</span>
+      <div class="attn-body"><b>${esc(t.title)}</b><small>${showAgent ? esc(t.agent) + " · " : ""}${esc(t.time_left)}</small></div>${priorityBadge(t.priority)}</div>`).join("")}</div>`;
 }
 function aiStatsCard(s) {
-  return `<div class="ai-stats">
-    <div class="ai-ring" style="--p:${s.free_pct}"><div><b>${s.free_pct}%</b><small>0-token</small></div></div>
-    <div class="ai-nums">
-      <div><span>${icon("bolt")} Instant answers</span><b>${s.instant}</b></div>
-      <div><span>${icon("recycle")} From cache</span><b>${s.cache}</b></div>
-      <div><span>${icon("sparkle")} AI calls</span><b>${s.llm}</b></div>
-      <div><span>${icon("chart")} Tokens used</span><b>${(s.prompt_tokens + s.completion_tokens).toLocaleString()}</b></div>
-      <div class="good"><span>${icon("check")} Tokens saved (est.)</span><b>~${s.tokens_saved_est.toLocaleString()}</b></div>
-    </div></div>
+  return `<div class="ai-stats"><div class="ai-ring" style="--p:${s.free_pct}"><div><b>${s.free_pct}%</b><small>0-token</small></div></div>
+    <div class="ai-nums"><div><span>${icon("bolt")} Instant answers</span><b>${s.instant}</b></div><div><span>${icon("recycle")} From cache</span><b>${s.cache}</b></div>
+      <div><span>${icon("sparkle")} AI calls</span><b>${s.llm}</b></div><div><span>${icon("chart")} Tokens used</span><b>${(s.prompt_tokens + s.completion_tokens).toLocaleString()}</b></div>
+      <div class="good"><span>${icon("check")} Tokens saved (est.)</span><b>~${s.tokens_saved_est.toLocaleString()}</b></div></div></div>
     <p class="muted small">Last ${s.days} days · ${s.questions} questions · ${s.cached_prompt_tokens.toLocaleString()} prompt tokens served from Groq's prefix cache</p>`;
 }
 
-/* ---------- Toasts ---------- */
+/* ---------- Toasts / modal ---------- */
 function toast(msg, type = "info") {
   let box = $("#toasts");
   if (!box) { box = document.createElement("div"); box.id = "toasts"; document.body.appendChild(box); }
@@ -131,11 +124,8 @@ function toast(msg, type = "info") {
   setTimeout(() => el.classList.add("hide"), 3600); setTimeout(() => el.remove(), 4100);
 }
 async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); toast("Copied to clipboard", "success"); }
-  catch { toast("Copy failed - please select and copy manually", "error"); }
+  try { await navigator.clipboard.writeText(text); toast("Copied to clipboard", "success"); } catch { toast("Copy failed - please copy manually", "error"); }
 }
-
-/* ---------- Modal ---------- */
 function openModal({ title, body, submitText = "Save", onSubmit, wide = false, hideFooter = false, danger = false }) {
   closeModal();
   const wrap = document.createElement("div");
@@ -159,7 +149,7 @@ function openModal({ title, body, submitText = "Save", onSubmit, wide = false, h
     catch (ex) { err.textContent = ex.message; err.hidden = false; }
     finally { btn.disabled = false; btn.classList.remove("loading"); }
   });
-  const first = $("input:not([type=hidden]):not([type=radio]), select, textarea", form);
+  const first = $("input:not([type=hidden]):not([type=radio]):not([type=checkbox]), select, textarea", form);
   if (first) setTimeout(() => first.focus(), 60);
   return wrap;
 }
@@ -180,11 +170,11 @@ function credentialsHTML(n) {
 function bindCopy(root) { $$("[data-copy]", root).forEach((b) => b.addEventListener("click", () => copyText(b.dataset.copy))); }
 function showCredentials(n) { openModal({ title: "Login details", hideFooter: true, body: credentialsHTML(n) }); bindCopy($("#modal")); }
 
-/* ---------- Task preview (pages can add buttons via window.TaskPreviewActions) ---------- */
+/* ---------- Task preview (page adds buttons via window.TaskPreviewActions) ---------- */
 async function showTaskDetail(taskId) {
   let data;
   try { data = await api(`/api/tasks/${taskId}`); }
-  catch (e) { toast(e.status === 404 ? "This task no longer exists or is not assigned to you." : e.message, "error"); return; }
+  catch (e) { toast(e.status === 404 ? "This task no longer exists or you can't see it." : e.message, "error"); return; }
   const { task: t, history } = data;
   const hist = history.map((h) => `<li><div class="tl-dot"></div><div><div class="tl-head"><b>${esc(h.by_name)}</b> · ${esc(h.created_local)}</div>
       <div class="tl-body">${h.status ? statusBadge(h.status) : ""} ${h.progress !== null && h.progress !== undefined ? `<span class="muted">${h.progress}%</span>` : ""}
@@ -192,13 +182,10 @@ async function showTaskDetail(taskId) {
   const actions = (window.TaskPreviewActions ? window.TaskPreviewActions(t) : []) || [];
   openModal({
     title: `Task #${t.id}`, wide: true, hideFooter: true,
-    body: `<div class="detail">
-      <div class="detail-top"><h2>${esc(t.title)}</h2><div class="detail-badges">${priorityBadge(t.priority)}${statusBadge(t.status)}</div></div>
+    body: `<div class="detail"><div class="detail-top"><h2>${esc(t.title)}</h2><div class="detail-badges">${priorityBadge(t.priority)}${statusBadge(t.status)}</div></div>
       <p class="muted">${esc(t.description || "No description")}</p>
-      <div class="detail-grid">
-        <div><label>Assigned to</label><div class="agent-chip"><span class="avatar sm">${initials(t.agent_name)}</span>${esc(t.agent_name)}</div></div>
-        <div><label>Deadline</label><div>${esc(t.deadline_local)}</div></div>
-        <div><label>Time left</label>${timeChip(t)}</div>
+      <div class="detail-grid"><div><label>Assigned to</label><div class="agent-chip"><span class="avatar sm">${initials(t.agent_name)}</span>${esc(t.agent_name)}</div></div>
+        <div><label>Deadline</label><div>${esc(t.deadline_local)}</div></div><div><label>Time left</label>${timeChip(t)}</div>
         <div><label>Estimated effort</label><div>${t.estimated_hours ? esc(t.estimated_hours) + " h" : "—"}</div></div></div>
       <div class="detail-progress"><label>Progress — ${t.progress}%</label>${progressBar(t.progress, t.status)}</div>
       ${actions.length ? `<div class="detail-actions">${actions.map((a, i) => `<button type="button" class="btn ${a.primary ? "primary" : "ghost"} sm" data-pa="${i}">${a.icon ? icon(a.icon) : ""}${esc(a.label)}</button>`).join("")}</div>` : ""}
@@ -207,10 +194,11 @@ async function showTaskDetail(taskId) {
   $$("#modal [data-pa]").forEach((b) => b.addEventListener("click", () => { const a = actions[+b.dataset.pa]; closeModal(); a.onClick(t); }));
 }
 
-/* ---------- Navigation ---------- */
+/* ---------- Navigation & header ---------- */
 function initNav(onChange) {
-  const links = $$(".nav-link[data-view]");
+  const links = $$(".nav-link[data-view]").filter((l) => !l.hidden);
   const show = (view) => {
+    if (!links.some((l) => l.dataset.view === view)) view = links[0]?.dataset.view;
     links.forEach((l) => l.classList.toggle("active", l.dataset.view === view));
     $$(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${view}`));
     $("#page-title").textContent = links.find((l) => l.dataset.view === view)?.dataset.title || "";
@@ -220,17 +208,15 @@ function initNav(onChange) {
   };
   links.forEach((l) => l.addEventListener("click", (e) => { e.preventDefault(); show(l.dataset.view); }));
   $("#menu-btn")?.addEventListener("click", () => document.body.classList.toggle("nav-open"));
-  const initial = location.hash.slice(1);
-  show(links.some((l) => l.dataset.view === initial) ? initial : links[0].dataset.view);
+  show(location.hash.slice(1));
   return show;
 }
-
-/* ---------- Header ---------- */
 function themeIcon() { return icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon"); }
 function initHeader(me, { onShortcut } = {}) {
   $("#user-name").textContent = me.display_name;
-  $("#user-role").textContent = me.role === "admin" ? "Administrator" : "Agent";
+  $("#user-role").textContent = me.role;
   $("#user-avatar").textContent = initials(me.display_name);
+  $("#role-pill").textContent = me.role;
   $("#today").textContent = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   $("#logout-btn").addEventListener("click", logout);
   const tbtn = $("#theme-btn");
@@ -279,17 +265,17 @@ async function loadNotifications() {
   } catch { /* silent */ }
 }
 
-/* ---------- AI Chat (scope = 'admin' | 'agent') ---------- */
+/* ---------- AI chat ---------- */
 function sourceTag(source, tokens) {
-  if (source === "instant") return `<span class="src src-instant" title="Answered directly from the database - no AI tokens used">${icon("bolt")}Instant · 0 tokens</span>`;
-  if (source === "cache") return `<span class="src src-cache" title="Same question, same data - reused a recent answer">${icon("recycle")}Cached · 0 tokens${tokens?.saved ? ` (saved ~${tokens.saved})` : ""}</span>`;
+  if (source === "instant") return `<span class="src src-instant" title="Answered from the database - no AI tokens">${icon("bolt")}Instant · 0 tokens</span>`;
+  if (source === "cache") return `<span class="src src-cache" title="Same question, same data">${icon("recycle")}Cached · 0 tokens${tokens?.saved ? ` (saved ~${tokens.saved})` : ""}</span>`;
   if (source === "ai" && tokens) {
     const total = (tokens.prompt || 0) + (tokens.completion || 0);
-    return `<span class="src src-ai" title="Prompt ${tokens.prompt || 0} · cached ${tokens.cached || 0} · output ${tokens.completion || 0}">${icon("sparkle")}AI · ${total.toLocaleString()} tokens${tokens.cached ? ` (${tokens.cached} cached)` : ""}</span>`;
+    return `<span class="src src-ai">${icon("sparkle")}AI · ${total.toLocaleString()} tokens${tokens.cached ? ` (${tokens.cached} cached)` : ""}</span>`;
   }
   return "";
 }
-function initChat({ scope, suggestions, greeting: greet, onDataChanged }) {
+function initChat({ suggestions, greeting: greet, onDataChanged }) {
   const log = $("#chat-log"), input = $("#chat-input"), sendBtn = $("#chat-send");
   let busy = false;
   const LABEL = { done: "Done", cancelled: "Cancelled", expired: "Expired", failed: "Failed" };
@@ -303,7 +289,7 @@ function initChat({ scope, suggestions, greeting: greet, onDataChanged }) {
   const bindActionCards = (root) => $$(".action-card", root).forEach((card) => $$("[data-act]", card).forEach((btn) => btn.addEventListener("click", async () => {
     $$("button", card).forEach((b) => (b.disabled = true)); btn.classList.add("loading");
     try {
-      const res = await api(`/api/ai/${scope}/actions/${card.dataset.action}/${btn.dataset.act}`, { method: "POST" });
+      const res = await api(`/api/ai/actions/${card.dataset.action}/${btn.dataset.act}`, { method: "POST" });
       card.outerHTML = actionCardHTML(res);
       if (res.status === "done") { toast(res.result, "success"); onDataChanged && onDataChanged(); } else if (res.status === "failed") toast(res.result, "error");
     } catch (e) { toast(e.message, "error"); $$("button", card).forEach((b) => (b.disabled = false)); btn.classList.remove("loading"); }
@@ -313,7 +299,7 @@ function initChat({ scope, suggestions, greeting: greet, onDataChanged }) {
     el.className = `msg ${role}`;
     const body = role === "assistant" ? `<div class="md">${renderMarkdown(content)}</div>` : `<div class="user-text">${esc(content)}</div>`;
     const extras = notices.map(credentialsHTML).join("") + actions.map(actionCardHTML).join("");
-    el.innerHTML = `<div class="msg-avatar">${role === "assistant" ? icon("sparkle") : initials(Session.user?.display_name)}</div>` +
+    el.innerHTML = `<div class="msg-avatar">${role === "assistant" ? icon("sparkle") : initials(ME?.display_name)}</div>` +
       `<div class="msg-bubble">${body}${extras ? `<div class="msg-extras">${extras}</div>` : ""}` +
       `<div class="msg-meta">${role === "assistant" ? sourceTag(source, tokens) : ""}${time ? `<span>${esc(time)}</span>` : ""}` +
       `${role === "assistant" && content ? `<button type="button" class="msg-copy" title="Copy">${icon("copy")}</button>` : ""}</div></div>`;
@@ -332,7 +318,7 @@ function initChat({ scope, suggestions, greeting: greet, onDataChanged }) {
   $$("#chat-suggestions .chip").forEach((c) => c.addEventListener("click", () => { input.value = c.textContent; send(); }));
   async function loadHistory() {
     try {
-      const hist = await api(`/api/ai/${scope}/history`);
+      const hist = await api("/api/ai/history");
       if (!hist.length) return welcome();
       log.innerHTML = "";
       hist.forEach((m) => bubble(m.role, m.content, { time: m.time, actions: m.actions || [], source: m.source, tokens: m.tokens }));
@@ -359,7 +345,7 @@ function initChat({ scope, suggestions, greeting: greet, onDataChanged }) {
     const typing = bubble("assistant", "");
     $(".md", typing).innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
     try {
-      const res = await api(`/api/ai/${scope}/chat`, { method: "POST", body: { message: text } });
+      const res = await api("/api/ai/chat", { method: "POST", body: { message: text } });
       typing.remove();
       bubble("assistant", res.answer, { actions: res.actions || [], notices: res.notices || [], source: res.source, tokens: res.tokens });
       if (res.changed && onDataChanged) onDataChanged();
@@ -375,16 +361,8 @@ function initChat({ scope, suggestions, greeting: greet, onDataChanged }) {
   sendBtn.addEventListener("click", send);
   $("#chat-clear").addEventListener("click", async () => {
     if (!(await confirmDialog("Clear chat", "Delete your conversation history with the assistant?", "Clear"))) return;
-    await api(`/api/ai/${scope}/history`, { method: "DELETE" }); welcome(); toast("Chat cleared", "success");
+    await api("/api/ai/history", { method: "DELETE" }); welcome(); toast("Chat cleared", "success");
   });
   loadHistory();
   return { ask: (q) => { input.value = q; send(); }, focus: () => input.focus() };
-}
-
-/* Quick-ask box on dashboards: jumps to the assistant and sends the question */
-function bindQuickAsk(navigate, chat) {
-  const f = $("#quick-ask");
-  if (!f) return;
-  f.addEventListener("submit", (e) => { e.preventDefault(); const q = f.q.value.trim(); if (!q) return; f.q.value = ""; navigate("assistant"); chat.ask(q); });
-  $$("#quick-ask .chip").forEach((c) => c.addEventListener("click", () => { navigate("assistant"); chat.ask(c.dataset.q); }));
 }

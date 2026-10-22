@@ -1,11 +1,11 @@
-"""Password hashing, JWT login/logout and role-based route decorators.
-1. Client sends  Authorization: Bearer <JWT>
-2. jwt_utils.decode() checks signature + expiry
-3. Small DB check: user active, token_version matches (password reset / role change / delete
-   bump it -> old tokens die instantly), jti not revoked (logout)."""
+"""Password hashing, JWT login/logout and permission checks.
+
+Every request: JWT signature + expiry  ->  user active, token_version and role_id still match
+->  permissions are LOADED FROM THE DATABASE (role_permissions). Editing a role's permissions
+therefore takes effect on the very next request, without logging anyone out."""
 import hashlib
 import secrets
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from functools import wraps
 from typing import Optional, Tuple
@@ -13,8 +13,9 @@ from typing import Optional, Tuple
 from flask import g, request
 
 import jwt_utils
-from database import get_conn, audit
+from database import get_conn, audit, role_permissions
 from errors import Unauthorized, Forbidden
+from permissions import WRITE_PERMS
 from utils import now_utc, to_iso
 
 
@@ -23,18 +24,27 @@ class User:
     id: int
     username: str
     display_name: str
-    role: str
+    role_id: int
+    role_name: str
+    permissions: frozenset = field(default_factory=frozenset)
+
+    def has(self, *perms) -> bool:
+        return all(p in self.permissions for p in perms)
+
+    def has_any(self, *perms) -> bool:
+        return any(p in self.permissions for p in perms)
 
     @property
-    def is_admin(self) -> bool:
-        return self.role == "admin"
+    def sees_all_tasks(self) -> bool:
+        return "tasks.view_all" in self.permissions
 
     @property
-    def is_agent(self) -> bool:
-        return self.role == "agent"
+    def can_write(self) -> bool:
+        return bool(self.permissions & WRITE_PERMS)
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        return {"id": self.id, "username": self.username, "display_name": self.display_name,
+                "role_id": self.role_id, "role": self.role_name, "permissions": sorted(self.permissions)}
 
 
 def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:
@@ -42,17 +52,28 @@ def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:
     return hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 200_000).hex(), salt
 
 
+def load_user(conn, user_id: int) -> Optional[User]:
+    row = conn.execute("""SELECT u.id, u.username, u.display_name, u.role_id, u.token_version, r.name AS role_name
+                          FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id=? AND u.is_active=1""",
+                       (user_id,)).fetchone()
+    if not row:
+        return None
+    user = User(row["id"], row["username"], row["display_name"], row["role_id"], row["role_name"],
+                frozenset(role_permissions(conn, row["role_id"])))
+    user._token_version = row["token_version"]
+    return user
+
+
 def login(username: str, password: str):
     username = (username or "").strip().lower()
     with get_conn() as conn:
         row = conn.execute("SELECT * FROM users WHERE username=? AND is_active=1", (username,)).fetchone()
-    if not row or not secrets.compare_digest(hash_password(password or "", row["salt"])[0], row["password_hash"]):
-        audit(None, "login_failed", username)
-        raise Unauthorized("Invalid username or password.")
-    user = User(row["id"], row["username"], row["display_name"], row["role"])
-    token, payload = jwt_utils.encode({"sub": str(user.id), "role": user.role, "name": user.display_name,
-                                       "tv": row["token_version"]})
-    audit(user.id, "login", user.role)
+        if not row or not secrets.compare_digest(hash_password(password or "", row["salt"])[0], row["password_hash"]):
+            audit(None, "login_failed", username)
+            raise Unauthorized("Invalid username or password.")
+        user = load_user(conn, row["id"])
+    token, payload = jwt_utils.encode({"sub": str(user.id), "rid": user.role_id, "tv": row["token_version"]})
+    audit(user.id, "login", user.role_name)
     return token, user, payload["exp"]
 
 
@@ -78,24 +99,26 @@ def _bearer_token() -> str:
 def user_from_token(token: str) -> User:
     payload = jwt_utils.decode(token)
     with get_conn() as conn:
-        row = conn.execute("SELECT id, username, display_name, role, token_version FROM users "
-                           "WHERE id=? AND is_active=1", (int(payload.get("sub", 0)),)).fetchone()
+        user = load_user(conn, int(payload.get("sub", 0)))
         revoked = conn.execute("SELECT 1 FROM revoked_tokens WHERE jti=?", (payload.get("jti"),)).fetchone()
-    if not row or revoked or row["token_version"] != payload.get("tv") or row["role"] != payload.get("role"):
+    if not user or revoked or user._token_version != payload.get("tv") or user.role_id != payload.get("rid"):
         raise Unauthorized("Session expired. Please log in again.")
-    return User(row["id"], row["username"], row["display_name"], row["role"])
+    return user
 
 
-def require_role(*roles: str):
-    """@require_role() -> any logged-in user; @require_role("admin") -> admins only."""
+def require(*perms, any_of: bool = False):
+    """@require()                        -> any logged-in user
+       @require("tasks.create")          -> must have the permission
+       @require("a", "b", any_of=True)   -> must have at least one"""
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             token = _bearer_token()
             user = user_from_token(token)
-            if roles and user.role not in roles:
+            ok = (not perms) or (user.has_any(*perms) if any_of else user.has(*perms))
+            if not ok:
                 audit(user.id, "access_denied", f"{request.method} {request.path}")
-                raise Forbidden("You are not authorized to perform this action.")
+                raise Forbidden("You don't have permission to do this.")
             g.user, g.token = user, token
             return fn(*args, **kwargs)
         return wrapper

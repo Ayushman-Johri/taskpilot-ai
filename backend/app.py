@@ -1,20 +1,19 @@
 """TaskPilot AI - Flask backend entry point.   Run:  python app.py  ->  http://127.0.0.1:5000"""
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, redirect
 from werkzeug.exceptions import HTTPException
 
 from config import FRONTEND_DIR, HOST, PORT, ALLOWED_ORIGINS, GROQ_API_KEY, GROQ_MODEL
 from database import init_db
 from errors import AppError
 from notifications import start_deadline_watcher
-from routes import auth_routes, task_routes, dashboard_routes, admin_routes, notification_routes, ai_routes
+from routes import auth_routes, task_routes, dashboard_routes, user_routes, notification_routes, ai_routes
 
 
 def create_app(start_watcher: bool = True) -> Flask:
     app = Flask(__name__, static_folder=None)
     app.json.sort_keys = False
     init_db()
-    for bp in (auth_routes.bp, task_routes.bp, dashboard_routes.bp, admin_routes.bp,
-               notification_routes.bp, ai_routes.admin_bp, ai_routes.agent_bp):
+    for bp in (auth_routes.bp, task_routes.bp, dashboard_routes.bp, user_routes.bp, notification_routes.bp, ai_routes.bp):
         app.register_blueprint(bp)
 
     @app.errorhandler(AppError)
@@ -54,6 +53,11 @@ def create_app(start_watcher: bool = True) -> Flask:
     def index():
         return send_from_directory(FRONTEND_DIR, "index.html")
 
+    @app.get("/admin.html")
+    @app.get("/agent.html")
+    def old_pages():                      # v5 bookmarks -> new single app page
+        return redirect("/app.html")
+
     @app.get("/<path:path>")
     def frontend(path):
         if path.startswith("api/"):
@@ -68,5 +72,5 @@ def create_app(start_watcher: bool = True) -> Flask:
 if __name__ == "__main__":
     if not GROQ_API_KEY:
         print("WARNING: GROQ_API_KEY is not set - instant answers work, but full AI answers are disabled.")
-    print(f"TaskPilot AI v5 | model: {GROQ_MODEL} | open http://{HOST}:{PORT}")
+    print(f"TaskPilot AI v6 | model: {GROQ_MODEL} | open http://{HOST}:{PORT}")
     create_app().run(host=HOST, port=PORT, debug=False, use_reloader=False)
